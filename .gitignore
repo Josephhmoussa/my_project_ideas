@@ -1,0 +1,17 @@
+# Bytecode / cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environments
+venv/
+.env/
+.venv/
+*.env
+
+# Logs
+*.log
+
+# md files
+*.md
