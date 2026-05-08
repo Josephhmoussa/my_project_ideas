@@ -47,7 +47,7 @@ class S3Client:
         )
         return response["Body"].read()
     
-    def get_csv_to_dataframe(self, source_path: str):
+    def get_csv_to_dataframe(self, source_path: str) -> pl.DataFrame:
         '''Get CSV file from source path and load it as Dataframe'''
     
         response = self.s3.get_object(
@@ -57,4 +57,16 @@ class S3Client:
 
         content = response["Body"].read()
         df = pl.read_csv(io.BytesIO(content))
+        return df
+    
+    def get_parquet_to_dataframe(self, source_path: str) -> pl.DataFrame:
+        '''Get parquet file from source path and load it to Dataframe'''
+
+        response = self.s3.get_object(
+            Bucket = self.bucket_name,
+            Key = source_path
+        )
+
+        content = response["Body"].read()
+        df = pl.read_parquet(io.BytesIO(content))
         return df
