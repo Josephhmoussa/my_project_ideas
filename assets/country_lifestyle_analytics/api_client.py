@@ -1,18 +1,28 @@
 import requests
 
 
-class APIclient:
-    def __init__(self, base_url, api_key=None):
+class APIClient:
+    def __init__(self, base_url: str, headers: dict = None, timeout: int = 30):
         self.base_url = base_url
-        self.api_key = api_key
-        self.session = requests.Session()
-
-        # Default headers
-        self.session.headers.update({
-            "Content-Type": "application/json"
-        })
-
-        if api_key:
-            self.session.headers.update({
-                "Authorization": f"Bearer {api_key}"
-            })
+        self.headers = headers or {}
+        self.timeout = timeout
+    
+    def get(self, endpoint: str, params: dict = None):
+        response = requests.get(
+            f"{self.base_url}{endpoint}",
+            headers=self.headers,
+            params=params,
+            timeout=self.timeout
+        )
+        response.raise_for_status()
+        return response.json()
+    
+    def post(self, endpoint: str, data: dict = None):
+        response = requests.post(
+            f"{self.base_url}{endpoint}",
+            headers=self.headers,
+            json=data,
+            timeout=self.timeout
+        )
+        response.raise_for_status()
+        return response.json()
