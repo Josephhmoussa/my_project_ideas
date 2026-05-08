@@ -70,3 +70,22 @@ class S3Client:
         content = response["Body"].read()
         df = pl.read_parquet(io.BytesIO(content))
         return df
+    
+    def upload_dataframe_to_S3(self, target_path: str, df: pl.DataFrame):
+        '''Upload Dataframe to specific target path to S3'''
+
+        # Empty bytes file
+        buffer = io.BytesIO()
+
+        # Write df to parquet
+        df.write_parquet(buffer)
+
+        # Reset cursor to the begining
+        buffer.seek(0)
+
+        # Upload to S3
+        self.s3.put_object(
+            Bucket=self.bucket_name,
+            Key=target_path,
+            Body=buffer.getvalue()
+        )
