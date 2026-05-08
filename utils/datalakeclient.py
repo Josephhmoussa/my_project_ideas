@@ -46,3 +46,15 @@ class S3Client:
             Key=source_path
         )
         return response["Body"].read()
+    
+    def get_csv_to_dataframe(self, source_path: str):
+        '''Get CSV file from source path and load it as Dataframe'''
+    
+        response = self.s3.get_object(
+            Bucket=self.bucket_name,
+            Key=source_path
+        )
+
+        content = response["Body"].read()
+        df = pl.read_csv(io.BytesIO(content))
+        return df
