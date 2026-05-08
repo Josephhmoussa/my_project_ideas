@@ -1,6 +1,8 @@
 import boto3
 from botocore.config import Config
 import os
+import io
+import polars as pl
 from dotenv import load_dotenv
 
 
@@ -10,7 +12,7 @@ class S3Client:
 
         load_dotenv()
 
-        self.service_client = boto3.client(
+        self.s3 = boto3.client(
             "s3",
             aws_access_key_id = os.getenv("AWS_ACCESS_KEY_ID"),
             aws_secret_access_key = os.getenv("AWS_SECRET_ACCESS_KEY"),
@@ -26,6 +28,21 @@ class S3Client:
     def get_paths_from_folder(self, folder_name: str) -> set[str]:
         '''Return object paths from an S3 prefix'''
 
-        paths = self.bucket.objects.filter(Prefix=folder_name)
-        full_paths = {obj.key for obj in paths if not obj.key.endswith("/")}
+        response = self.s3.list_objects_v2(
+            Bucket=self.bucket_name,
+            Prefix=folder_name
+        )
+
+        contents = response.get("Contents", [])
+
+        full_paths = {obj["Key"] for obj in contents if not obj["Key"].endswith("/")}
         return full_paths
+    
+    def download_file(self, source_path: str):
+        '''Download file from S3'''
+
+        response = self.s3.get_object(
+            Bucket=self.bucket_name,
+            Key=source_path
+        )
+        return response["Body"].read()
