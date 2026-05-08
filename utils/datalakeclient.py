@@ -60,7 +60,7 @@ class S3Client:
         return df
     
     def get_parquet_to_dataframe(self, source_path: str) -> pl.DataFrame:
-        '''Get parquet file from source path and load it to Dataframe'''
+        '''Get parquet file from source path and load it to a polars Dataframe'''
 
         response = self.s3.get_object(
             Bucket = self.bucket_name,
@@ -69,6 +69,18 @@ class S3Client:
 
         content = response["Body"].read()
         df = pl.read_parquet(io.BytesIO(content))
+        return df
+    
+    def get_json_to_dataframe(self, source_path: str) -> pl.DataFrame:
+        '''Get json from S3 and load it to a polars Dataframe'''
+
+        response = self.s3.get_object(
+            Bucket=self.bucket_name,
+            Key=source_path
+        )
+
+        content = response["Body"].read()
+        df = pl.read_json(io.BytesIO(content))
         return df
     
     def upload_dataframe_to_S3(self, target_path: str, df: pl.DataFrame):
