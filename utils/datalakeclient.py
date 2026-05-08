@@ -47,6 +47,16 @@ class S3Client:
         )
         return response["Body"].read()
     
+    def upload_bytes(self, target_path: str, data: bytes):
+        '''Upload file to S3'''
+
+        return self.s3.put_object(
+            Bucket=self.bucket_name,
+            Key=target_path,
+            Body=data
+        )
+
+    
     def get_csv_to_dataframe(self, source_path: str) -> pl.DataFrame:
         '''Get CSV file from source path and load it as Dataframe'''
     

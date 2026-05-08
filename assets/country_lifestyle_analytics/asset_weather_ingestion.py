@@ -13,12 +13,15 @@ params = {
 }
 bucket_name = "country-lifestyle-analytics"
 
-def ingest_weather_api_bronze(data: dict) -> dict:
+def ingest_weather_api_bronze(url: str, params: dict) -> dict:
     '''Ingest json from API and upload to S3'''
 
-    api = APIClient(base_url)
+    # Read data from api
+    api = APIClient(url)
     data = api.get("archive", params=params)
 
-    return data
+    # Save to S3
+    
+    
 
-print(ingest_weather_api_bronze)
+print(ingest_weather_api_bronze(base_url, params))
