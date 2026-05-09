@@ -7,7 +7,7 @@ class APIClient:
         self.headers = headers or {}
         self.timeout = timeout
     
-    def get(self, endpoint: str, params: dict = None):
+    def get(self, endpoint: str, params: dict = None) -> dict:
         response = requests.get(
             f"{self.base_url}{endpoint}",
             headers=self.headers,
@@ -17,7 +17,7 @@ class APIClient:
         response.raise_for_status()
         return response.json()
     
-    def post(self, endpoint: str, data: dict = None):
+    def post(self, endpoint: str, data: dict = None) -> dict:
         response = requests.post(
             f"{self.base_url}{endpoint}",
             headers=self.headers,

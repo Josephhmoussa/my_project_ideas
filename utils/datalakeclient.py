@@ -56,7 +56,6 @@ class S3Client:
             Body=data
         )
 
-    
     def get_csv_to_dataframe(self, source_path: str) -> pl.DataFrame:
         '''Get CSV file from source path and load it as Dataframe'''
     
