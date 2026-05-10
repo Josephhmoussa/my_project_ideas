@@ -3,6 +3,7 @@ from botocore.config import Config
 import os
 import io
 import polars as pl
+import json
 from dotenv import load_dotenv
 
 
@@ -80,7 +81,7 @@ class S3Client:
         df = pl.read_parquet(io.BytesIO(content))
         return df
     
-    def get_json_to_dataframe(self, source_path: str) -> pl.DataFrame:
+    def get_flat_json_to_dataframe(self, source_path: str) -> pl.DataFrame:
         '''Get json from S3 and load it to a polars Dataframe'''
 
         response = self.s3.get_object(
@@ -91,6 +92,21 @@ class S3Client:
         content = response["Body"].read()
         df = pl.read_json(io.BytesIO(content))
         return df
+    
+    def get_nested_json(self, source_path: str) -> dict:
+        '''Get JSON file from S3 and load it as dict'''
+
+        response = self.s3.get_object(
+            Bucket=self.bucket_name,
+            Key=source_path
+        )
+
+        content = response["Body"].read()
+
+        # Bytes -> dict
+        data = json.loads(content)
+
+        return data
     
     def upload_dataframe_to_S3(self, target_path: str, df: pl.DataFrame):
         '''Upload Dataframe to specific target path to S3'''
