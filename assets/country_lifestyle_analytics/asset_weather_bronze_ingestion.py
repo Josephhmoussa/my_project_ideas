@@ -1,3 +1,10 @@
+from dagster import (
+    asset,
+    AssetExecutionContext,
+    MaterializeResult,
+    MetadataValue
+)
+
 import polars as pl
 import json
 from datetime import datetime, UTC
@@ -14,11 +21,19 @@ base_url = "https://archive-api.open-meteo.com/v1/"
 bucket_name = "country-lifestyle-analytics"
 datalake_client = S3Client(bucket_name=bucket_name)
 
-def lookup_worldcities(csv_path: str) -> pl.DataFrame:
+@asset(group_name="country_lifestyle_analytics", compute_kind="csv", description="load lookup csv to dataframe")
+def lookup_worldcities(context: AssetExecutionContext) -> MaterializeResult:
     '''Get CSV and load it into polars Dataframe'''
 
-    df = pl.read_csv(csv_path, schema_overrides={"population": pl.Float64})
-    return df.head(3)
+    df = pl.read_csv(csv_path, schema_overrides={"population": pl.Float64}).head(3)
+    context.log.info("Loaded world cities csv to Dataframe")
+
+    return MaterializeResult(
+        metadata={
+            "number_rows": df.height,
+            "preview": MetadataValue(df.head().to_pandas().to_markdown())
+        }
+    )
 
 
 def ingest_weather_api_bronze(url: str, df: pl.DataFrame) -> list[dict]:
