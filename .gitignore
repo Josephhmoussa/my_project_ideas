@@ -23,5 +23,5 @@ venv/
 .DS_Store
 
 # Temp files
-.tmp/
-tmp/
+.tmp*
+tmp*
