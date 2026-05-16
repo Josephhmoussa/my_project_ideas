@@ -1,7 +1,7 @@
 import polars as pl
 import logging
 
-from utils.datalakeclient import S3Client
+from prod_pipeline.utils.datalakeclient import S3Client
 
 logger = logging.getLogger(__name__)
 

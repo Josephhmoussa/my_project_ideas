@@ -1,6 +1,6 @@
 from dagster import Definitions, load_assets_from_package_module
 
-from . import assets
+from .prod_pipeline import assets
 
 # Load all assets
 dagster_assets = load_assets_from_package_module(assets)
