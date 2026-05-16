@@ -7,12 +7,11 @@ from dagster import (
 
 import json
 from datetime import datetime, UTC
-import logging
 
 from prod_pipeline.utils.datalakeclient import S3Client
 from prod_pipeline.utils.api_client import APIClient
 
-csv_path = "assets/country_lifestyle_analytics/worldcities.csv"
+csv_path = "prod_pipeline/assets/country_lifestyle_analytics/worldcities.csv"
 base_url = "https://archive-api.open-meteo.com/v1/"
 
 bucket_name = "country-lifestyle-analytics"

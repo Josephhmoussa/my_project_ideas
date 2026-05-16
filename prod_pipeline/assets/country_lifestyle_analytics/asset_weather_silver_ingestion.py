@@ -82,5 +82,3 @@ def ingest_weather_api_silver() -> pl.DataFrame:
     logger.info(f"Silver data uploaded to {target_path}")
 
     return df
-
-print(ingest_weather_api_silver())
