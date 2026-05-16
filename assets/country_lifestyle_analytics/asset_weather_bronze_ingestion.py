@@ -5,7 +5,6 @@ from dagster import (
     MetadataValue
 )
 
-import polars as pl
 import json
 from datetime import datetime, UTC
 import logging
@@ -13,35 +12,52 @@ import logging
 from utils.datalakeclient import S3Client
 from utils.api_client import APIClient
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
 csv_path = "assets/country_lifestyle_analytics/worldcities.csv"
 base_url = "https://archive-api.open-meteo.com/v1/"
+
 bucket_name = "country-lifestyle-analytics"
 datalake_client = S3Client(bucket_name=bucket_name)
 
-@asset(group_name="country_lifestyle_analytics", compute_kind="csv", description="load lookup csv to dataframe")
-def lookup_worldcities(context: AssetExecutionContext) -> MaterializeResult:
-    '''Get CSV and load it into polars Dataframe'''
+@asset(group_name="country_lifestyle_analytics",
+       compute_kind= "csv",
+       description="upload lookup table to S3")
 
-    df = pl.read_csv(csv_path, schema_overrides={"population": pl.Float64}).head(3)
-    context.log.info("Loaded world cities csv to Dataframe")
-
+def upload_lookup_table(context: AssetExecutionContext) -> MaterializeResult:
+    '''Upload CSV lookup table to S3'''
+    file_name = "worldcities.csv"
+    target_path = f"bronze/weather/lookup/{file_name}"
+    
+    with open(csv_path, "rb") as f:
+        datalake_client.upload_bytes(
+            target_path,
+            f.read()
+        )
+    
+    context.log.info(f"Uploaded {file_name} to {target_path}")
+    
     return MaterializeResult(
         metadata={
-            "number_rows": df.height,
-            "preview": MetadataValue(df.head().to_pandas().to_markdown())
+            "s3_path": target_path,
+            "file_name": "worldcities.csv"
         }
     )
 
+@asset(group_name="country_lifestyle_analytics",
+       compute_kind="bronze",
+       deps=[upload_lookup_table],
+       description="Load csv lookup table + ingest weather API and load to bronze S3")
+def ingest_weather_api_bronze(context: AssetExecutionContext) -> MaterializeResult:
+    '''Ingest json from API + load csv world cities lookup table and upload to S3'''
 
-def ingest_weather_api_bronze(url: str, df: pl.DataFrame) -> list[dict]:
-    '''Ingest json from API and upload to S3'''
+    context.log.info("Starting weather API ingestion")
+    file_name = "worldcities.csv"
+    CSV_PATH = f"bronze/weather/lookup/{file_name}"
 
-    logger.info("Starting weather API ingestion")
+    # Load lookup table from S3
+    df = datalake_client.get_csv_to_dataframe(CSV_PATH).head(3)
+
     # API call
-    api = APIClient(url)
+    api = APIClient(base_url)
 
     results = []
     for row in df.iter_rows(named=True):
@@ -74,8 +90,13 @@ def ingest_weather_api_bronze(url: str, df: pl.DataFrame) -> list[dict]:
         )
         datalake_client.upload_bytes(target_path=target_path, data=data_bytes)
 
-        logger.info(f"Uploaded weather data for {city} to {target_path} ")
+        context.log.info(f"Uploaded weather data for {city} to {target_path} ")
 
         results.append(data)
 
-    return results
+    return MaterializeResult(
+        metadata={
+            "number_files": len(results),
+            "preview": MetadataValue.md(df.head().to_pandas().to_markdown())
+        }
+    )
