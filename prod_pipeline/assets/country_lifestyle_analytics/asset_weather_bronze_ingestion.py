@@ -5,6 +5,7 @@ from dagster import (
     MetadataValue
 )
 
+import polars as pl
 import json
 from datetime import datetime, UTC
 
@@ -45,6 +46,7 @@ def upload_lookup_table(context: AssetExecutionContext) -> MaterializeResult:
        compute_kind="bronze",
        deps=[upload_lookup_table],
        description="Load csv lookup table + ingest weather API and load to bronze S3")
+
 def ingest_weather_api_bronze(context: AssetExecutionContext) -> MaterializeResult:
     '''Ingest json from API + load csv world cities lookup table and upload to S3'''
 
@@ -52,8 +54,12 @@ def ingest_weather_api_bronze(context: AssetExecutionContext) -> MaterializeResu
     file_name = "worldcities.csv"
     CSV_PATH = f"bronze/weather/lookup/{file_name}"
 
+    schema_overrides = {
+        "population": pl.Float64
+    }
+
     # Load lookup table from S3
-    df = datalake_client.get_csv_to_dataframe(CSV_PATH).head(3)
+    df = datalake_client.get_csv_to_dataframe(CSV_PATH, schema_overrides).head(3)
 
     # API call
     api = APIClient(base_url)
@@ -96,6 +102,9 @@ def ingest_weather_api_bronze(context: AssetExecutionContext) -> MaterializeResu
     return MaterializeResult(
         metadata={
             "number_files": len(results),
-            "preview": MetadataValue.md(df.head().to_pandas().to_markdown())
+            "api_preview": MetadataValue.json(results[:1]),
+            "lookup_nbr_rows": df.height,
+            "lookup_preview": MetadataValue.md(
+                f"```\n{df.head()}\n```")
         }
     )

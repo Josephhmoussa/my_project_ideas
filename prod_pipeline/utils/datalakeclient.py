@@ -57,7 +57,7 @@ class S3Client:
             Body=data
         )
 
-    def get_csv_to_dataframe(self, source_path: str) -> pl.DataFrame:
+    def get_csv_to_dataframe(self, source_path: str, schema_overrides: dict) -> pl.DataFrame:
         '''Get CSV file from source path and load it as Dataframe'''
     
         response = self.s3.get_object(
@@ -66,7 +66,7 @@ class S3Client:
         )
 
         content = response["Body"].read()
-        df = pl.read_csv(io.BytesIO(content))
+        df = pl.read_csv(io.BytesIO(content), schema_overrides=schema_overrides)
         return df
     
     def get_parquet_to_dataframe(self, source_path: str) -> pl.DataFrame:
