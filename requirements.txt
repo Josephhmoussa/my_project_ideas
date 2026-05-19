@@ -1,5 +1,6 @@
 requests
 polars
+pandas
 dagster
 dagster-webserver
 dagster-aws
