@@ -96,7 +96,7 @@ class S3Client:
         content = response["Body"].read()
 
         # Bytes -> dict
-        data = json.loads(content)
+        data = json.loads(content.decode("utf-8"))
 
         return data
     
