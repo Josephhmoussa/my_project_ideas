@@ -104,7 +104,6 @@ def ingest_weather_api_bronze(context: AssetExecutionContext) -> MaterializeResu
             "number_cities": len(results),
             "api_preview": MetadataValue.json(results[:1]),
             "lookup_nbr_rows": df.height,
-            "lookup_preview": MetadataValue.md(
-                f"```\n{df.head()}\n```")
+            "lookup_preview": MetadataValue.md(df.head().to_pandas().to_markdown())
         }
     )
