@@ -1,17 +1,29 @@
+from dagster import (
+    asset,
+    AssetExecutionContext,
+    MaterializeResult,
+    MetadataValue
+)
+
 import polars as pl
-import logging
+from .asset_weather_bronze_ingestion import ingest_weather_api_bronze
 
 from prod_pipeline.utils.datalakeclient import S3Client
 
-logger = logging.getLogger(__name__)
 
 bucket_name = "country-lifestyle-analytics"
 datalake_client = S3Client(bucket_name=bucket_name)
 
-def ingest_weather_api_silver() -> pl.DataFrame:
+@asset(
+        group_name="country_lifestyle_analytics",
+        compute_kind="python",
+        deps=[ingest_weather_api_bronze],
+        description="Ingests bronze data and apply transformation"
+)
+def ingest_weather_api_silver(context:AssetExecutionContext) -> MaterializeResult:
     '''Ingest bronze data normalize and load to silver'''
 
-    logger.info("Starting Silver Layer ingestion")
+    context.log.info("Starting Silver Layer ingestion")
 
     bronze_folder_path = f"bronze/weather"
 
@@ -33,7 +45,7 @@ def ingest_weather_api_silver() -> pl.DataFrame:
         dfs.append(df)
 
     if not dfs:
-        logger.warning("No data found in bronze layer")
+        context.log.warning("No data found in bronze layer")
         return pl.DataFrame()
 
     df = pl.concat(dfs)
@@ -79,6 +91,6 @@ def ingest_weather_api_silver() -> pl.DataFrame:
     )
 
     datalake_client.upload_dataframe_to_S3(target_path, df)
-    logger.info(f"Silver data uploaded to {target_path}")
+    context.log.info(f"Silver data uploaded to {target_path}")
 
     return df
