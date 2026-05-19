@@ -4,3 +4,4 @@ dagster
 dagster-webserver
 dagster-aws
 boto3
+pyarrow
