@@ -79,12 +79,17 @@ def ingest_weather_api_bronze(context: AssetExecutionContext) -> MaterializeResu
         }
 
         # Get data
-        data = api.get("archive", params=params)
+        try:
+            data = api.get("archive", params=params)
+        except Exception as e:
+            context.log.error(f"API failed for {city}: {e}")
+            continue
 
         # Wrap Metadata
+        now = datetime.now(UTC)
         wrapped_data = {
             "city": city,
-            "ingested_at": datetime.now(UTC).isoformat(),
+            "ingested_at": now.isoformat(),
             "source": "open_meteo",
             "data": data
         }
@@ -93,7 +98,7 @@ def ingest_weather_api_bronze(context: AssetExecutionContext) -> MaterializeResu
         data_bytes = json.dumps(wrapped_data, separators=(",", ":")).encode("utf-8")
 
         # Timestamp
-        timestamp = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
+        timestamp = now.strftime("%Y%m%d_%H%M%S")
 
         # Save to S3
         target_path = (
@@ -105,7 +110,10 @@ def ingest_weather_api_bronze(context: AssetExecutionContext) -> MaterializeResu
 
         context.log.info(f"Uploaded weather data for {city} to {target_path} ")
 
-        results.append(wrapped_data)
+        results.append({
+            "city": city,
+            "ingested_at": now.isoformat()
+        })
 
     return MaterializeResult(
         metadata={
