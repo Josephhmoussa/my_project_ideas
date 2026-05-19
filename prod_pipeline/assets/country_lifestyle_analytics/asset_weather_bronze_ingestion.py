@@ -81,8 +81,16 @@ def ingest_weather_api_bronze(context: AssetExecutionContext) -> MaterializeResu
         # Get data
         data = api.get("archive", params=params)
 
+        # Wrap Metadata
+        wrapped_data = {
+            "city": city,
+            "ingested_at": datetime.now(UTC).isoformat(),
+            "source": "open_meteo",
+            "data": data
+        }
+
         # Convert dict -> json -> bytes
-        data_bytes = json.dumps(data).encode("utf-8")
+        data_bytes = json.dumps(wrapped_data, separators=(",", ":")).encode("utf-8")
 
         # Timestamp
         timestamp = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
@@ -97,7 +105,7 @@ def ingest_weather_api_bronze(context: AssetExecutionContext) -> MaterializeResu
 
         context.log.info(f"Uploaded weather data for {city} to {target_path} ")
 
-        results.append(data)
+        results.append(wrapped_data)
 
     return MaterializeResult(
         metadata={
