@@ -12,7 +12,6 @@ from prod_pipeline.utils.datalakeclient import S3Client
 
 
 bucket_name = "country-lifestyle-analytics"
-datalake_client = S3Client(bucket_name=bucket_name)
 
 @asset(
         group_name="country_lifestyle_analytics",
@@ -26,6 +25,8 @@ def ingest_weather_api_silver(context:AssetExecutionContext) -> MaterializeResul
     context.log.info("Starting Silver Layer ingestion")
 
     bronze_folder_path = f"bronze/weather"
+
+    datalake_client = S3Client(bucket_name=bucket_name)
 
     # Get bronze files
     paths = datalake_client.get_paths_from_folder(bronze_folder_path)
@@ -93,4 +94,9 @@ def ingest_weather_api_silver(context:AssetExecutionContext) -> MaterializeResul
     datalake_client.upload_dataframe_to_S3(target_path, df)
     context.log.info(f"Silver data uploaded to {target_path}")
 
-    return df
+    return MaterializeResult(
+        metadata={
+            "row_number": df.height,
+            "preview": MetadataValue.md(df.head().to_pandas().to_markdown())
+        }
+    )
