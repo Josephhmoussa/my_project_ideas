@@ -46,7 +46,7 @@ def upload_lookup_table(context: AssetExecutionContext) -> MaterializeResult:
     )
 
 @asset(group_name="country_lifestyle_analytics",
-       compute_kind="bronze",
+       compute_kind="python",
        deps=[upload_lookup_table],
        description="Load csv lookup table + ingest weather API and load to bronze S3")
 
