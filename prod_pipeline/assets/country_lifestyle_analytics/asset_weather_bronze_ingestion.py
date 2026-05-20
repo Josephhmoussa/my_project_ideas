@@ -16,7 +16,7 @@ csv_path = "prod_pipeline/assets/country_lifestyle_analytics/worldcities.csv"
 base_url = "https://archive-api.open-meteo.com/v1/"
 
 bucket_name = "country-lifestyle-analytics"
-datalake_client = S3Client(bucket_name=bucket_name)
+
 
 @asset(group_name="country_lifestyle_analytics",
        compute_kind= "csv",
@@ -24,8 +24,11 @@ datalake_client = S3Client(bucket_name=bucket_name)
 
 def upload_lookup_table(context: AssetExecutionContext) -> MaterializeResult:
     '''Upload CSV lookup table to S3'''
+
     file_name = "worldcities.csv"
     target_path = f"bronze/weather/lookup/{file_name}"
+
+    datalake_client = S3Client(bucket_name=bucket_name)
     
     with open(csv_path, "rb") as f:
         datalake_client.upload_bytes(
@@ -53,6 +56,8 @@ def ingest_weather_api_bronze(context: AssetExecutionContext) -> MaterializeResu
     context.log.info("Starting weather API ingestion")
     file_name = "worldcities.csv"
     CSV_PATH = f"bronze/weather/lookup/{file_name}"
+
+    datalake_client = S3Client(bucket_name=bucket_name)
 
     schema_overrides = {
         "population": pl.Float64
