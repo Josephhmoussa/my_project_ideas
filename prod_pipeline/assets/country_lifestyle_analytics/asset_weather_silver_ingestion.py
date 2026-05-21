@@ -34,20 +34,29 @@ def ingest_weather_api_silver(context:AssetExecutionContext) -> MaterializeResul
     # Load to Dataframes and concat
     dfs = []
     for path in paths:
-        data = datalake_client.get_nested_json(path)
 
-        df = pl.DataFrame(data["daily"])
+        if path.endswith(".json"):
 
-        df = df.with_columns([
-            pl.lit(data["latitude"]).alias("latitude"),
-            pl.lit(data["longitude"]).alias("longitude")
-        ])
+            data = datalake_client.get_nested_json(path)
 
-        dfs.append(df)
+            df = pl.DataFrame(data["data"]["daily"])
+
+            df = df.with_columns([
+                pl.lit(data["data"]["latitude"]).alias("latitude"),
+                pl.lit(data["data"]["longitude"]).alias("longitude"),
+                pl.lit(data["city"]).alias("city"),
+                pl.lit(data["ingested_at"]).alias("ingested_at")
+            ])
+
+            dfs.append(df)
 
     if not dfs:
         context.log.warning("No data found in bronze layer")
-        return pl.DataFrame()
+        return MaterializeResult(
+            metadata={
+                "row_count": 0
+            }
+        )
 
     df = pl.concat(dfs)
 
@@ -65,7 +74,7 @@ def ingest_weather_api_silver(context:AssetExecutionContext) -> MaterializeResul
     df = df.with_columns([
         pl.col("time")
         .str
-        .to_date("%Y-%m-%d")
+        .to_date()
         .alias("date"),
 
         pl.col("temperature_2m_max")
@@ -81,8 +90,25 @@ def ingest_weather_api_silver(context:AssetExecutionContext) -> MaterializeResul
         .cast(pl.Float64),
 
         pl.col("longitude")
-        .cast(pl.Float64)
+        .cast(pl.Float64),
+
+        pl.col("ingested_at")
+        .cast(pl.Datetime),
+
+        pl.col("city")
+        .cast(pl.Utf8)
+
     ]).drop("time")
+
+    # Deduplication (keep latest ingestion per city/date)
+    df = (
+        df
+        .sort("ingested_at")
+        .unique(
+            subset=["city", "date"],
+            keep="last"
+        )
+    )
 
     # Save to parquet and upload to S3
     target_path = (
