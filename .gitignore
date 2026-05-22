@@ -25,3 +25,6 @@ venv/
 # Temp files
 .tmp*
 tmp*
+
+# Test files
+test*
