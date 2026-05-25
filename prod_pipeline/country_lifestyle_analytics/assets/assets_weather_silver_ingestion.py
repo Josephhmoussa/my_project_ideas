@@ -6,7 +6,7 @@ from dagster import (
 )
 
 import polars as pl
-from .asset_weather_bronze_ingestion import ingest_weather_api_bronze
+from .assets_weather_bronze_ingestion import ingest_weather_api_bronze
 
 from prod_pipeline.utils.datalakeclient import S3Client
 
