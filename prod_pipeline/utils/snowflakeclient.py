@@ -3,7 +3,7 @@ import json
 import snowflake.connector
 
 class SnowflakeClient:
-    def __init__(self, secret_name, region_name="eu-central-1", database=None, schema=None):
+    def __init__(self, secret_name, region_name="eu-north-1", database=None, schema=None):
         '''Initialize SnowflakeClient with credentials, database and schema'''
 
         # Fetch secret from AWS Secrets Manager
