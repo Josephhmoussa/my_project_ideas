@@ -4,7 +4,7 @@ from dagster import (
     MaterializeResult
 )
 
-from utils.snowflakeclient import SnowflakeClient
+from prod_pipeline.utils.snowflakeclient import SnowflakeClient
 from .assets_weather_bronze_ingestion import ingest_weather_api_bronze
 
 
