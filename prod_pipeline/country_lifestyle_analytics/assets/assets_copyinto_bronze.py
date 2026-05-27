@@ -18,7 +18,11 @@ from .assets_weather_bronze_ingestion import ingest_weather_api_bronze
 def load_weather_to_snowflake(context: AssetExecutionContext) -> MaterializeResult:
     '''Copy raw data from Snowflake stage in to bronze layer'''
 
-    snowflake_client = SnowflakeClient("prod/snowflake/credentials", database="COUNTRY_LIFESTYLE_ANALYTICS", schema="bronze")
+    snowflake_client = SnowflakeClient(
+        creds_secret_name="prod/snowflake/credentials",
+        key_secret_name="prod/snowflake/private_key",
+        database="COUNTRY_LIFESTYLE_ANALYTICS", schema="bronze"
+    )
     status = "success"
     try:
         snowflake_client.execute(

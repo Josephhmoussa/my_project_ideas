@@ -28,3 +28,8 @@ tmp*
 
 # Test files
 test*
+
+# Generated keys
+private_key.pem
+public_key.pem
+private_key_pkcs8.pem
