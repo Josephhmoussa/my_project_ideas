@@ -1,0 +1,8 @@
+version: 2
+
+sources:
+  - name: bronze
+    database: COUNTRY_LIFESTYLE_ANALYTICS
+    schema: bronze
+    tables:
+      - name: weather_raw
