@@ -33,3 +33,6 @@ test*
 private_key.pem
 public_key.pem
 private_key_pkcs8.pem
+
+# Logs
+logs/
