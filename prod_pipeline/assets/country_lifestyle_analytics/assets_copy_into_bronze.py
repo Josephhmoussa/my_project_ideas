@@ -9,6 +9,7 @@ from .assets_weather_bronze_ingestion import ingest_weather_api_bronze
 
 
 @asset(
+    key=["bronze", "weather_raw"],
     deps=[ingest_weather_api_bronze],
     group_name="country_lifestyle_analytics",
     compute_kind="python",

@@ -8,3 +8,4 @@ boto3
 pyarrow
 snowflake-connector-python
 dbt-snowflake
+dagster-dbt
