@@ -36,3 +36,6 @@ private_key_pkcs8.pem
 
 # Logs
 logs/
+
+# Generate CSVs
+generate.py
