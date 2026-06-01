@@ -1,6 +1,11 @@
 requests
 polars
+pandas
 dagster
 dagster-webserver
 dagster-aws
 boto3
+pyarrow
+snowflake-connector-python
+dbt-snowflake
+dagster-dbt
