@@ -20,7 +20,7 @@ path = Path("prod_pipeline/assets/timesheet_tracker/csv_files/")
 def ingest_bronze_timesheet(context: AssetExecutionContext) -> MaterializeResult:
     '''Ingest csv files with minimal transformations and upload to S3'''
 
-    bucket_name = ""
+    bucket_name = "timesheets-tracker"
     s3_client = S3Client(bucket_name=bucket_name)
 
     context.log.info("Extraction started")
@@ -30,7 +30,11 @@ def ingest_bronze_timesheet(context: AssetExecutionContext) -> MaterializeResult
     for file in path.rglob("*.csv"):
         category = str(file).split("/")[-1].split("_")[1]
         ingested_at = datetime.now(UTC).strftime("%Y-%m-%d-%H:%M:%S")
-        df = pl.read_csv(file)
+        try:
+            df = pl.read_csv(file)
+        except Exception as e:
+            context.log.error(f"Error reading file {file} to csv: {e}")
+            continue
 
         df = df.with_columns([
             pl.lit(category)
@@ -46,12 +50,21 @@ def ingest_bronze_timesheet(context: AssetExecutionContext) -> MaterializeResult
     
     df = pl.concat(dfs, how="diagonal_relaxed")
 
+    context.log.info("Dataframe unified successfully")
+
     # Upload to S3
-    target_path = ""
+    file_name = "timesheet_data"
+    target_path = (
+        f"bronze/"
+        f"{file_name}_{ingested_at}.parquet"
+    )
 
-    return df
+    s3_client.upload_dataframe_to_S3(target_path, df)
+    context.log.info("Upload to S3 successfull")
 
-if __name__ == "__main__":
-    result = ingest_bronze_timesheet(path)
-
-    print(result)
+    return MaterializeResult(
+        metadata={
+            "row_number": df.height,
+            "preview": MetadataValue.md(df.head().to_pandas().to_markdown())
+        }
+    )
