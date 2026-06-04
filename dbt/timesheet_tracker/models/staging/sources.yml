@@ -1,0 +1,8 @@
+version 2:
+
+sources:
+  - name: bronze
+    database: timesheet_pipeline
+    schema: bronze
+    tables:
+      - name: timesheets
