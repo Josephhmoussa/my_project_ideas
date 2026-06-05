@@ -9,6 +9,7 @@ select
     "Task Number"      as task_number,
     "Org Level 4 Name" as org_level_4_name,
     "Grand Total"      as grand_total,
+    "year" as year,
     "5-Jan"   as week_05_jan,
     "12-Jan"  as week_12_jan,
     "19-Jan"  as week_19_jan,

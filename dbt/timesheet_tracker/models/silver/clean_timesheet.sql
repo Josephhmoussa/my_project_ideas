@@ -15,7 +15,8 @@ with unpivoted as (
                 'project_number',
                 'task_number',
                 'org_level_4_name',
-                'grand_total'
+                'grand_total',
+                'year'
             ],
             field_name='week_label',
             value_name='hours'
@@ -29,13 +30,18 @@ selection as (
         manager::varchar as manager,
         employee_id::int as employee_id,
         employee_name::varchar as employee_name,
-        category::varchar as category,
+        case
+            when category = 'full' then 'submitted'
+            when category = 'missing' then 'not_submitted'
+            when category = 'saved' then 'created_not_submitted'
+            else null
+        end::varchar as category,
         ingested_at::timestamp as ingested_at,
         project_number::varchar as project_number,
         task_number::varchar as task_number,
         try_to_date(
             split_part(week_label, '_', 2) || '-' ||
-            initcap(split_part(week_label, '_', 3)) || '-2025',
+            initcap(split_part(week_label, '_', 3)) || '-' || year::int,
             'DD-Mon-YYYY'
         )as week_date,
         try_to_number(hours) as hours

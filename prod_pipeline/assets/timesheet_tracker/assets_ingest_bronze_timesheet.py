@@ -28,8 +28,9 @@ def ingest_bronze_timesheet(context: AssetExecutionContext) -> MaterializeResult
     # Loop through csv_files folder, extract data and concat to a single DataFrame
     dfs = []
     for file in path.rglob("*.csv"):
-        category = str(file).split("/")[-1].split("_")[1]
+        category = str(file.stem).split("_")[1]
         ingested_at = datetime.now(UTC).strftime("%Y-%m-%d-%H:%M:%S")
+        year = str(file.stem).split("_")[-1]
         try:
             df = pl.read_csv(file)
         except Exception as e:
@@ -43,7 +44,11 @@ def ingest_bronze_timesheet(context: AssetExecutionContext) -> MaterializeResult
 
             pl.lit(ingested_at)
             .str.to_datetime("%Y-%m-%d-%H:%M:%S")
-            .alias("ingested_at")
+            .alias("ingested_at"),
+
+            pl.lit(year)
+            .cast(pl.Int64)
+            .alias("year")
         ])
 
         dfs.append(df)
