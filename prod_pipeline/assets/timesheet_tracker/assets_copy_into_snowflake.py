@@ -28,7 +28,7 @@ def copy_into_snowflake(context: AssetExecutionContext) -> MaterializeResult:
         snowflake_client.execute(
             '''
             copy into timesheets
-            from @aws_stage
+            from @aws_stage_timesheets
             file_format = (format_name = ff_parquet)
             match_by_column_name = case_insensitive;
             '''
