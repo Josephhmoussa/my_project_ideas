@@ -37,8 +37,8 @@ selection as (
             else null
         end::varchar as category,
         ingested_at::timestamp as ingested_at,
-        project_number::varchar as project_number,
-        task_number::varchar as task_number,
+        project_number::varchar as project_code,
+        task_number::varchar as task_code,
         try_to_date(
             split_part(week_label, '_', 2) || '-' ||
             initcap(split_part(week_label, '_', 3)) || '-' || year::int,

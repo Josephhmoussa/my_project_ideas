@@ -1,0 +1,30 @@
+version: 2
+
+models:
+  - name: clean_timesheet
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - employee_id
+              - week_date
+
+    columns:
+      - name: employee_id
+        tests:
+          - not_null
+      
+      - name: week_date
+        tests:
+          - not_null
+      
+      - name: category
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['submitted', 'not_submitted', 'created_not_submitted']
+      
+      - name: hours
+        tests:
+         - not_null
