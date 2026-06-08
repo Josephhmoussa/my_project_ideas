@@ -28,3 +28,27 @@ models:
       - name: hours
         tests:
          - not_null
+
+  - name: clean_project_codes
+    columns:
+      - name: project_code
+        tests:
+          - not_null
+          - unique
+      
+      - name: project_name
+        tests:
+          - not_null
+          - unique
+  
+
+  - name: task_codes
+    columns:
+      - name: task_codes
+        tests:
+         - not_null
+         - unique
+      
+      - name: cpx_opx
+        tests:
+          - not_null
