@@ -1,7 +1,7 @@
 {{ config(materialized='table') }}
 
 select
-    ct.organization,
+    ct.cost_center,
     ct.manager,
     ct.employee_id,
     ct.employee_name,

@@ -1,1 +1,26 @@
+version: 2
 
+models:
+  - name: fact_timesheet
+    columns:
+      - name: employee_id
+        tests:
+          - not_null
+      
+      - name: week_date
+        tests:
+          - not_null
+      
+      - name: project_code
+        tests:
+          - relationships:
+              arguments:
+                to: ref('clean_project_codes')
+                field: project_code
+      
+      - name: task_code
+        tests:
+          - relationships:
+              arguments:
+                to: ref('clean_task_codes')
+                field: task_code
