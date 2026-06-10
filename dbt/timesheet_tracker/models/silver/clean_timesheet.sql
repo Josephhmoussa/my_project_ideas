@@ -26,7 +26,7 @@ with unpivoted as (
 
 selection as (
     select
-        split_part(organization, ':', 1)::varchar as organization,
+        split_part(split_part(organization, ':', 2), '_', 1)::varchar as cost_center,
         manager::varchar as manager,
         employee_id::int as employee_id,
         employee_name::varchar as employee_name,
@@ -37,7 +37,7 @@ selection as (
             else null
         end::varchar as category,
         ingested_at::timestamp as ingested_at,
-        project_number::varchar as project_code,
+        split_part(project_number, '-', 2)::varchar as project_code,
         task_number::varchar as task_code,
         try_to_date(
             split_part(week_label, '_', 2) || '-' ||
@@ -47,6 +47,7 @@ selection as (
         try_to_number(hours) as hours
     from unpivoted
     where hours is not null
+        and manager is not null
         and employee_id is not null
 ),
 
