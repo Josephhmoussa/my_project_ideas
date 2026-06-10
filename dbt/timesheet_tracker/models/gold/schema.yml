@@ -24,3 +24,10 @@ models:
               arguments:
                 to: ref('clean_task_codes')
                 field: task_code
+  
+  - name: dim_employees
+    columns:
+      - name: employee_id
+        tests:
+          - not_null
+          - unique

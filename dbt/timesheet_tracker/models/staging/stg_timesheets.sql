@@ -1,6 +1,6 @@
 select
     "Organization"     as organization,
-    "Manager"          as manager,
+    "Manager"          as manager_name,
     "Employee ID"      as employee_id,
     "Employee Name"    as employee_name,
     "category"         as category,

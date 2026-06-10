@@ -2,7 +2,7 @@
 
 select
     ct.cost_center,
-    ct.manager,
+    ct.manager_name,
     ct.employee_id,
     ct.employee_name,
     ct.category,

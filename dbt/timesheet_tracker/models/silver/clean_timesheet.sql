@@ -7,7 +7,7 @@ with unpivoted as (
             cast_to='varchar',
             exclude=[
                 'organization',
-                'manager',
+                'manager_name',
                 'employee_id',
                 'employee_name',
                 'category',
@@ -27,7 +27,7 @@ with unpivoted as (
 selection as (
     select
         split_part(split_part(organization, ':', 2), '_', 1)::varchar as cost_center,
-        manager::varchar as manager,
+        manager_name::varchar as manager_name,
         employee_id::int as employee_id,
         employee_name::varchar as employee_name,
         case
@@ -47,7 +47,7 @@ selection as (
         try_to_number(hours) as hours
     from unpivoted
     where hours is not null
-        and manager is not null
+        and manager_name is not null
         and employee_id is not null
 ),
 
