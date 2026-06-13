@@ -38,3 +38,6 @@ models:
     gold:
       +materialized: table
       +schema: gold
+    mart:
+      +materialized: table
+      +schema: mart

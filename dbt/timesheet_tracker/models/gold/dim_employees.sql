@@ -5,4 +5,4 @@ select distinct
     employee_name,
     manager_name,
     cost_center
-from {{ ref('fact_timesheet') }}
+from {{ ref('clean_timesheet') }}

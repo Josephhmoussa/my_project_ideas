@@ -1,17 +1,20 @@
 {{ config(materialized='table') }}
 
+
 select
     ct.cost_center,
-    ct.manager_name,
     ct.employee_id,
-    ct.employee_name,
     ct.category,
     ct.project_code,
     cp.project_name,
     ct.task_code,
     tc.cpx_opx,
     ct.week_date,
-    ct.hours
+    ct.hours,
+    case
+        when cp.project_name not in ('Admin & Mgt', 'Leave & Absences', 'Meetings') then ct.hours
+        else null
+    end as project_hours
 from {{ ref('clean_timesheet') }} as ct
 left join {{ ref('clean_project_codes')}} as cp
     on ct.project_code = cp.project_code
