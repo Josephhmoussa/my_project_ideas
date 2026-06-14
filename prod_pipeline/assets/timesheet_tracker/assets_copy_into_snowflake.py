@@ -30,12 +30,14 @@ def copy_into_snowflake(context: AssetExecutionContext) -> MaterializeResult:
 
     # Timesheets Table
     try:
+        snowflake_client.execute("TRUNCATE TABLE timesheets")
         snowflake_client.execute(
             '''
             copy into timesheets
             from @aws_stage_timesheets
             file_format = (format_name = ff_parquet)
-            match_by_column_name = case_insensitive;
+            match_by_column_name = case_insensitive
+            force = TRUE;
             '''
         )
         context.log.info("Successfully loaded timesheet data into bronze table")
@@ -46,12 +48,14 @@ def copy_into_snowflake(context: AssetExecutionContext) -> MaterializeResult:
     
     # Project codes table
     try:
+        snowflake_client.execute("TRUNCATE TABLE project_codes")
         snowflake_client.execute(
             '''
             copy into project_codes
             from @aws_stage_lookup/project_codes.parquet
             file_format = (format_name = ff_parquet)
             match_by_column_name = case_insensitive
+            force = TRUE;
             '''
         )
         context.log.info("Successfully loaded timesheet data into bronze table")
@@ -62,12 +66,14 @@ def copy_into_snowflake(context: AssetExecutionContext) -> MaterializeResult:
     
     # Task codes table
     try:
+        snowflake_client.execute("TRUNCATE TABLE task_codes")
         snowflake_client.execute(
             '''
             copy into task_codes
             from @aws_stage_lookup/task_codes.parquet
             file_format = (format_name = ff_parquet)
             match_by_column_name = case_insensitive
+            force = TRUE;
             '''
         )
         context.log.info("Successfully loaded timesheet data into bronze table")

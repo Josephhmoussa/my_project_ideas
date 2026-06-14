@@ -12,7 +12,7 @@ select
     ct.week_date,
     ct.hours,
     case
-        when cp.project_name not in ('Admin & Mgt', 'Leave & Absences', 'Meetings') then ct.hours
+        when cp.project_name != 'Global Admin' and cp.project_name is not null then ct.hours
         else null
     end as project_hours
 from {{ ref('clean_timesheet') }} as ct

@@ -37,8 +37,13 @@ selection as (
             else null
         end::varchar as category,
         ingested_at::timestamp as ingested_at,
-        split_part(project_number, '-', 2)::varchar as project_code,
-        task_number::varchar as task_code,
+        case
+            when project_number != 'ADMIN' then split_part(project_number, '-', 2) else project_number end::varchar as project_code,
+        case
+            when project_number = 'ADMIN' and task_number = '1C' then '1C - Admin & Mgt'
+            when project_number = 'ADMIN' and task_number = '1D' then '1D - Leave & Absences'
+            else task_number
+        end::varchar as task_code,
         try_to_date(
             split_part(week_label, '_', 2) || '-' ||
             initcap(split_part(week_label, '_', 3)) || '-' || year::int,
@@ -46,16 +51,16 @@ selection as (
         )as week_date,
         try_to_number(hours) as hours
     from unpivoted
-    where hours is not null
-        and manager_name is not null
-        and employee_id is not null
+    where org_level_4_name != 'Grand Total' 
+        and hours is not null
+        and not (category = 'full' and project_number is null)
 ),
 
 deduped as (
     select *
     from selection
     qualify row_number() over (
-        partition by employee_id, week_date order by ingested_at desc
+        partition by employee_id, week_date, project_code, task_code order by ingested_at desc
     ) = 1
 )
 

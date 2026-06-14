@@ -8,6 +8,8 @@ models:
             combination_of_columns:
               - employee_id
               - week_date
+              - project_code
+              - task_code
 
     columns:
       - name: employee_id
