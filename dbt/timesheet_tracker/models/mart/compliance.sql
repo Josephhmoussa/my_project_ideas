@@ -21,13 +21,19 @@ ratios as (
     select
         *,
         case when total_project_hours > 0 then (capex_hours / total_project_hours) else 0 end::float as capex_ratio,
-        case when total_project_hours > 0 then (opex_hours / total_project_hours) else 0 end::float as opex_ratio,
-        case when leave_hours in (37.5, 40) then 1 else 0 end as is_leave_week,
-        case when created_not_submitted_hours != 0 or not_submitted_hours != 0 then 1 else 0 end as has_non_submitted
+        case when total_project_hours > 0 then (opex_hours / total_project_hours) else 0 end::float as opex_ratio
     from aggregated_metrics
 ),
 
 conditions as (
+    select
+        *,
+        case when leave_hours in (37.5, 40) then 1 else 0 end as is_leave_week,
+        case when created_not_submitted_hours != 0 or not_submitted_hours != 0 then 1 else 0 end as has_non_submitted
+    from ratios
+),
+
+final_conditions as (
     select
         *,
         case
@@ -39,7 +45,7 @@ conditions as (
         end as mix_ok,
         case
             when admin_hours <= 20 and has_non_submitted = 0 then 1 else 0 end as admin_ok
-    from ratios
+    from conditions
 ),
 
 compliance as (
@@ -50,7 +56,7 @@ compliance as (
             when has_non_submitted = 0 and not (mix_ok = 1 and time_ok = 1 and admin_ok = 1) then 1
             else 0
         end as is_compliant
-    from conditions
+    from final_conditions
 )
 
 select *
