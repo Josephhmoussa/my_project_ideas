@@ -7,5 +7,5 @@ from prod_pipeline.resources.dbt_resource import dbt_project, WeatherDbtTranslat
         manifest=dbt_project.manifest_path,
         dagster_dbt_translator=WeatherDbtTranslator()
 )
-def transform_weather(context: AssetExecutionContext, dbt: DbtCliResource):
-    yield from dbt.cli(["build"], context=context).stream()
+def transform_weather(context: AssetExecutionContext, weather_dbt: DbtCliResource):
+    yield from weather_dbt.cli(["build"], context=context).stream()
