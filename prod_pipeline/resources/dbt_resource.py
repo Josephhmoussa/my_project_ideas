@@ -6,7 +6,7 @@ import os
 load_dotenv()
 
 WEATHER_DBT_PROJECT_DIR = os.getenv("WEATHER_DBT_PROJECT_DIR")
-TIMESHEET_DBT_PROJECT_DIR = os.getenv("TIMESHEET_DBT_DIR")
+TIMESHEET_DBT_PROJECT_DIR = os.getenv("TIMESHEET_DBT_PROJECT_DIR")
 DBT_PROFILES_DIR = os.getenv("DBT_PROFILES_DIR")
 
 # Define dbt project
@@ -30,4 +30,4 @@ class WeatherDbtTranslator(DagsterDbtTranslator):
 
 class TimesheetDbtTranslator(DagsterDbtTranslator):
     def get_group_name(self, dbt_resource_props):
-        return "timesheet_tracker"
+        return "timesheet_pipeline"
