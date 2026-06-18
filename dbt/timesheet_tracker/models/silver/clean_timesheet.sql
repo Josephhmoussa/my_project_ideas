@@ -28,7 +28,7 @@ selection as (
     select
         split_part(split_part(organization, ':', 2), '_', 1)::varchar as cost_center,
         manager_name::varchar as manager_name,
-        employee_id::int as employee_id,
+        employee_id::varchar as employee_id,
         employee_name::varchar as employee_name,
         case
             when category = 'full' then 'submitted'
