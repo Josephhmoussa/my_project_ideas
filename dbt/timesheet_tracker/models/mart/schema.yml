@@ -1,0 +1,48 @@
+version: 2
+
+models:
+  - name: compliance
+    columns:
+      - name: employee_id
+        tests:
+          - not_null
+
+      - name: week_date
+        tests:
+          - not_null
+      
+      - name: is_leave_week
+        tests:
+          - accepted_values:
+              arguments:
+                values: [0, 1]
+      
+      - name: has_non_submitted
+        tests:
+          - accepted_values:
+              arguments:
+                values: [0, 1]
+      
+      - name: time_ok
+        tests:
+          - accepted_values:
+              arguments:
+                values: [0, 1]
+              
+      - name: mix_ok
+        tests:
+          - accepted_values:
+              arguments:
+                values: [0, 1]
+              
+      - name: admin_ok
+        tests:
+          - accepted_values:
+              arguments:
+                values: [0, 1]
+
+      - name: is_compliant
+        tests:
+          - accepted_values:
+              arguments:
+                values: [0, 1, 2]
