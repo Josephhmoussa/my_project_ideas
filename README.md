@@ -1,8 +1,6 @@
 # Timesheet Compliance Pipeline
 
-An end-to-end data engineering project that ingests employee timesheets, loads them into a Snowflake data warehouse via AWS S3, transforms them through a multi-layer dbt model, and surfaces compliance KPIs in a Power BI dashboard.
-
-Built as a portfolio project demonstrating a modern analytical engineering stack.
+A personal project I built to get hands-on with a production-style data stack. The pipeline takes raw employee timesheet exports, lands them in S3, loads them into Snowflake, runs a set of dbt transformations to clean and model the data, and ends with a Power BI dashboard tracking compliance KPIs across teams.
 
 ---
 
@@ -14,19 +12,19 @@ CSV Files (local)
       ▼
 ┌─────────────────┐
 │  Dagster Asset  │  Python · Polars
-│  (Ingestion)    │  Reads & validates raw timesheets
+│  (Ingestion)    │  Reads & categorises raw timesheets
 └────────┬────────┘
-         │ Upload as Parquet
+         │ Upload as Parquet (timestamped path)
          ▼
 ┌─────────────────┐
 │    AWS S3       │  Bronze layer (raw Parquet files)
 │  Data Lake      │
 └────────┬────────┘
-         │ COPY INTO via external stage
+         │ TRUNCATE + COPY INTO via external stage
          ▼
 ┌─────────────────┐
 │   Snowflake     │  Cloud data warehouse
-│  (Bronze Layer) │  Key-pair auth via AWS Secrets Manager
+│  (Bronze Layer) │  Key-pair auth, credentials from Secrets Manager
 └────────┬────────┘
          │
          ▼
@@ -44,7 +42,7 @@ CSV Files (local)
 └─────────────────┘
 ```
 
-All assets are orchestrated end-to-end by **Dagster**, with dependencies managed through the asset graph.
+All assets are orchestrated by **Dagster**, wired together through the asset graph so dependencies are explicit and each materialisation records row counts and data previews as metadata.
 
 ---
 
@@ -62,6 +60,20 @@ All assets are orchestrated end-to-end by **Dagster**, with dependencies managed
 
 ---
 
+## Source Data
+
+The source system exports timesheets in a **wide format**: one row per employee per project/task combination, with 52 individual week columns (one per Monday of the year, e.g. `5-Jan`, `12-Jan`, ..., `28-Dec`). Each export also represents a different submission state:
+
+| File | Category tag | Meaning |
+|------|-------------|---------|
+| `timesheet_full_year_2026.csv` | `full` → `submitted` | Fully submitted timesheets |
+| `timesheet_missing_timecards_2026.csv` | `missing` → `not_submitted` | Weeks with no timecard at all |
+| `timesheet_saved_not_submitted_2026.csv` | `saved` → `created_not_submitted` | Timecards saved as drafts but not submitted |
+
+During ingestion, all three files are read and concatenated into a single Parquet upload with a `category` column added. The category column flows through every layer and is what drives the compliance scoring downstream.
+
+---
+
 ## Data Model
 
 ### dbt Layers
@@ -69,29 +81,38 @@ All assets are orchestrated end-to-end by **Dagster**, with dependencies managed
 ```
 bronze (Snowflake raw tables)
   └── staging/
-        └── stg_timesheets          ← Rename columns, unpivot 52 weekly columns into rows
+        └── stg_timesheets          ← Rename the 52 week columns to snake_case (week_05_jan, etc.)
   └── silver/
-        ├── clean_timesheet         ← Type casting, dedup, business rule normalisation
-        ├── clean_project_codes     ← Project code lookup
-        └── clean_task_codes        ← Task code lookup (Capex/Opex classification)
+        ├── clean_timesheet         ← Unpivot wide→long, type cast, map category labels,
+        │                             parse week dates, deduplicate on (employee, week, project, task)
+        ├── clean_project_codes     ← Project code lookup (code → name)
+        └── clean_task_codes        ← Task code lookup (code → Capex/Opex classification)
   └── gold/
-        ├── fact_timesheet          ← Core fact table (employee · week · project · hours)
-        └── dim_employees           ← Employee dimension (unique per employee_id)
+        ├── fact_timesheet          ← Joins clean_timesheet with both lookups;
+        │                             adds project_hours (excludes Admin rows)
+        └── dim_employees           ← Unique employees with manager and cost centre
   └── mart/
-        └── compliance              ← Per-employee, per-week compliance scoring
+        └── compliance              ← Aggregates to employee-week grain, computes
+                                      ratios and flags, outputs a compliance score
 ```
+
+A few things worth calling out:
+
+- The **unpivot** in `clean_timesheet` uses `dbt_utils.unpivot` to turn the 52 week columns into rows. Without this the compliance logic would need to be written 52 times.
+- **Deduplication** in `clean_timesheet` uses a `qualify row_number()` window — if the same employee/week/project/task appears across multiple export files, the most recently ingested row wins.
+- The **category mapping** happens in silver (`full → submitted`, `missing → not_submitted`, `saved → created_not_submitted`) so gold and mart always work with clean label values.
 
 ### Compliance Scoring Logic
 
-Each employee-week record is evaluated against three compliance dimensions:
+Each employee-week is evaluated against three dimensions:
 
-| Dimension | Rule |
-|---|---|
-| `time_ok` | Total hours between 35–41 and all entries fully submitted |
-| `mix_ok` | Capex ratio 10–30%, Opex ratio 70–90% (or a full leave week) |
-| `admin_ok` | Admin hours ≤ 20 and all entries fully submitted |
+| Flag | Rule |
+|------|------|
+| `time_ok` | Total hours between 35–41 and no non-submitted entries |
+| `mix_ok` | Capex ratio 10–30% and Opex ratio 70–90% — or a full leave week (37.5 / 40 hrs leave) |
+| `admin_ok` | Admin hours ≤ 20 and no non-submitted entries |
 
-**Final score:** `2` = fully compliant · `1` = submitted but rule violation · `0` = not submitted
+**Final score:** `2` = fully compliant · `1` = submitted but at least one rule failed · `0` = has non-submitted entries
 
 ---
 
@@ -101,16 +122,16 @@ Each employee-week record is evaluated against three compliance dimensions:
 ├── prod_pipeline/                  # Dagster pipeline
 │   ├── assets/
 │   │   └── timesheet_tracker/
-│   │       ├── assets_ingest_bronze_timesheet.py   # S3 ingestion asset
-│   │       ├── assets_copy_into_snowflake.py       # Snowflake load asset
-│   │       ├── assets_dbt_transformation.py        # dbt build asset
-│   │       ├── generate.py                         # Synthetic demo data generator
+│   │       ├── assets_ingest_bronze_timesheet.py   # Reads CSVs, adds metadata cols, uploads to S3
+│   │       ├── assets_copy_into_snowflake.py       # TRUNCATE + COPY INTO bronze tables
+│   │       ├── assets_dbt_transformation.py        # Runs dbt build via DbtCliResource
+│   │       ├── generate.py                         # Synthetic data generator (see below)
 │   │       ├── csv_files/                          # Raw timesheet CSVs (input)
-│   │       └── lookup_files/                       # Project & task code lookups
+│   │       └── lookup_files/                       # Project & task code lookup CSVs
 │   ├── resources/
-│   │   └── dbt_resource.py                         # DbtCliResource configuration
+│   │   └── dbt_resource.py                         # DbtCliResource config
 │   └── utils/
-│       ├── datalakeclient.py                       # S3 wrapper (upload/download)
+│       ├── datalakeclient.py                       # S3 wrapper (upload, download, list)
 │       └── snowflakeclient.py                      # Snowflake wrapper (key-pair auth)
 │
 ├── dbt/timesheet_tracker/          # dbt project
@@ -129,14 +150,22 @@ Each employee-week record is evaluated against three compliance dimensions:
 
 ---
 
+## Synthetic Data Generator
+
+`generate.py` produces realistic demo CSVs so the pipeline can be run end-to-end without real data. It creates 20 employees across 3 teams (Sarah Mitchell / David Okafor / Rachel Burns), each assigned a fixed set of projects and tasks. Hours are randomised per week with intentional compliance violations seeded in — missing weeks, wrong Capex/Opex splits, draft-only saves — so the dashboard has something meaningful to show.
+
+The script outputs all three CSV types (`full_year`, `missing_timecards`, `saved_not_submitted`) matching exactly what the real system would export.
+
+---
+
 ## Setup & Running Locally
 
 ### Prerequisites
 
 - Python 3.11+
-- AWS credentials configured (via `~/.aws/credentials` or an IAM role)
-- Snowflake account with key-pair authentication stored in AWS Secrets Manager
-- dbt profile configured at `~/.dbt/profiles.yml`
+- AWS credentials configured (`~/.aws/credentials` or IAM role)
+- Snowflake account with key-pair auth — both the connection credentials and the PEM private key stored as separate secrets in AWS Secrets Manager
+- dbt profile at `~/.dbt/profiles.yml`
 
 ### 1. Install dependencies
 
@@ -155,13 +184,9 @@ DBT_PROFILES_DIR=~/.dbt
 
 ### 3. Generate demo data (optional)
 
-Uncomment and run the synthetic data generator to produce sample timesheet CSVs:
-
 ```bash
 python prod_pipeline/assets/timesheet_tracker/generate.py
 ```
-
-This creates realistic timesheet data for ~20 employees across 3 teams, covering a full 52-week year.
 
 ### 4. Install dbt packages
 
@@ -176,38 +201,37 @@ dbt deps
 dagster dev
 ```
 
-Open `http://localhost:3000`, navigate to the **Assets** tab, and materialise the `timesheet_pipeline` asset group in order:
+Open `http://localhost:3000`, go to the **Assets** tab, and materialise the `timesheet_pipeline` group in order:
 
 1. `ingest_bronze_lookup` + `ingest_bronze_timesheet`
 2. `copy_project_codes_into_snowflake` + `copy_timesheets_into_snowflake`
-3. `transform_timesheet` (runs full dbt build)
+3. `transform_timesheet` (runs the full dbt build)
 
 ---
 
 ## Dashboard
 
-The Power BI dashboard connects directly to Snowflake and visualises:
+The Power BI dashboard connects directly to Snowflake (`mart.compliance`) and shows:
 
 - Weekly compliance rate by team and employee
-- Capex / Opex split trends over time
-- Timesheet submission status breakdown
+- Capex / Opex split over time
+- Submission status breakdown (submitted vs. draft vs. missing)
 - Admin hours distribution
-- Compliance score distribution (0 / 1 / 2)
+- Compliance score breakdown (0 / 1 / 2)
 
-> **Note:** A video walkthrough of the dashboard is available [here — add your Loom link].
+> **Note:** Video walkthrough available [here — add your Loom link].
 
 ---
 
-## Key Design Decisions
+## A Few Design Notes
 
-**Why Dagster?**
-Asset-based orchestration makes dependencies explicit and gives full visibility into materialisation history, run metadata, and data previews — closer to how production pipelines are managed.
+**Dagster over Airflow** — I wanted asset-level observability rather than task-level. Being able to see row counts, data previews, and materialisation history per asset without writing extra logging code was worth it.
 
-**Why Polars?**
-Faster than pandas for the column-scan operations used during ingestion, with no extra infrastructure needed for small-to-medium CSV volumes.
+**Polars for ingestion** — the ingestion step is mostly reading CSVs and adding a few columns before uploading. Polars handles that faster than pandas and the API is cleaner for the column operations used here.
 
-**Why key-pair auth + Secrets Manager?**
-Avoids storing credentials in environment files or code. The Snowflake private key and connection credentials are fetched at runtime from AWS Secrets Manager, which is the recommended pattern for production workloads.
+**Snowflake auth** — the `SnowflakeClient` fetches two secrets at runtime: the connection credentials (user, account, warehouse, role) and the PEM private key. The key is converted from PEM to DER in-memory before being passed to the connector — nothing touches disk and nothing is stored in environment variables.
+
+**TRUNCATE + COPY INTO** — the bronze load is a full reload on every run, not an append. Given the source exports always contain the full year, this keeps the bronze tables clean without needing change detection logic.
 
 **Why a mart layer?**
 Separates reusable dimensional models (`gold`) from business-specific aggregations (`mart`). The compliance mart can be rebuilt or changed without touching the underlying fact and dimension tables.
