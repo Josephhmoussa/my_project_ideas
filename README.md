@@ -175,29 +175,20 @@ The script outputs all three CSV types (`full_year`, `missing_timecards`, `saved
 pip install -r requirements.txt
 ```
 
-### 2. Configure environment variables
-
-Create a `.env` file in the project root:
-
-```env
-TIMESHEET_DBT_PROJECT_DIR=./dbt/timesheet_tracker
-DBT_PROFILES_DIR=~/.dbt
-```
-
-### 3. Generate demo data (optional)
+### 2. Generate demo data (optional)
 
 ```bash
 python prod_pipeline/assets/timesheet_tracker/generate.py
 ```
 
-### 4. Install dbt packages
+### 3. Install dbt packages
 
 ```bash
 cd dbt/timesheet_tracker
 dbt deps
 ```
 
-### 5. Launch Dagster
+### 4. Launch Dagster
 
 ```bash
 dagster dev
