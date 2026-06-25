@@ -194,11 +194,7 @@ dbt deps
 dagster dev
 ```
 
-Open `http://localhost:3000`, go to the **Assets** tab, and materialise the `timesheet_pipeline` group in order:
-
-1. `ingest_bronze_lookup` + `ingest_bronze_timesheet`
-2. `copy_project_codes_into_snowflake` + `copy_timesheets_into_snowflake`
-3. `transform_timesheet` (runs the full dbt build)
+Open `http://localhost:3000`, go to the **Assets** tab, and materialise the `timesheet_pipeline` group.
 
 ---
 
