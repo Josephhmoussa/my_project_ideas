@@ -1,6 +1,6 @@
 # Timesheet Compliance Pipeline
 
-A personal project I built to get hands-on with a production-style data stack. The pipeline takes raw employee timesheet exports, lands them in S3, loads them into Snowflake, runs a set of dbt transformations to clean and model the data, and ends with a Power BI dashboard tracking compliance KPIs across teams.
+The pipeline takes raw employee timesheet exports, lands them in S3, loads them into Snowflake, runs a set of dbt transformations to clean and model the data, and ends with a Power BI dashboard tracking compliance KPIs across teams.
 
 ---
 
@@ -14,7 +14,7 @@ CSV Files (local)
 │  Dagster Asset  │  Python · Polars
 │  (Ingestion)    │  Reads & categorises raw timesheets
 └────────┬────────┘
-         │ Upload as Parquet (timestamped path)
+         │ Upload as Parquet (timestamped)
          ▼
 ┌─────────────────┐
 │    AWS S3       │  Bronze layer (raw Parquet files)
@@ -32,7 +32,7 @@ CSV Files (local)
 │              dbt Transformations            │
 │                                             │
 │  Staging → Silver → Gold → Mart             │
-│  (rename)  (clean)  (model) (compliance)    │
+│ (rename)  (clean)  (model) (compliance)     │
 └────────┬────────────────────────────────────┘
          │
          ▼
@@ -43,6 +43,8 @@ CSV Files (local)
 ```
 
 All assets are orchestrated by **Dagster**, wired together through the asset graph so dependencies are explicit and each materialisation records row counts and data previews as metadata.
+
+![alt text](<Screenshot 2026-06-25 at 12.14.48.png>)
 
 ---
 
@@ -211,7 +213,7 @@ Open `http://localhost:3000`, go to the **Assets** tab, and materialise the `tim
 
 ## Dashboard
 
-The Power BI dashboard connects directly to Snowflake (`mart.compliance`) and shows:
+The Power BI dashboard connects directly to Snowflake and shows:
 
 - Weekly compliance rate by team and employee
 - Capex / Opex split over time
@@ -222,26 +224,3 @@ The Power BI dashboard connects directly to Snowflake (`mart.compliance`) and sh
 > **Note:** Video walkthrough available [here — add your Loom link].
 
 ---
-
-## A Few Design Notes
-
-**Dagster over Airflow** — I wanted asset-level observability rather than task-level. Being able to see row counts, data previews, and materialisation history per asset without writing extra logging code was worth it.
-
-**Polars for ingestion** — the ingestion step is mostly reading CSVs and adding a few columns before uploading. Polars handles that faster than pandas and the API is cleaner for the column operations used here.
-
-**Snowflake auth** — the `SnowflakeClient` fetches two secrets at runtime: the connection credentials (user, account, warehouse, role) and the PEM private key. The key is converted from PEM to DER in-memory before being passed to the connector — nothing touches disk and nothing is stored in environment variables.
-
-**TRUNCATE + COPY INTO** — the bronze load is a full reload on every run, not an append. Given the source exports always contain the full year, this keeps the bronze tables clean without needing change detection logic.
-
-**Why a mart layer?**
-Separates reusable dimensional models (`gold`) from business-specific aggregations (`mart`). The compliance mart can be rebuilt or changed without touching the underlying fact and dimension tables.
-
----
-
-## What I'd Add Next
-
-- [ ] Incremental dbt models to avoid full table rebuilds on each run
-- [ ] Idempotent Snowflake load (swap + rename pattern instead of truncate-then-load)
-- [ ] GitHub Actions CI running `dbt compile` and `dbt test` on every PR
-- [ ] dbt source freshness checks
-- [ ] Alerting on compliance threshold breaches via Dagster sensors
