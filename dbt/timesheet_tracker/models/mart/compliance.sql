@@ -40,11 +40,11 @@ final_conditions as (
             when total_hours between 35 and 41 and has_non_submitted = 0 then 1 else 0 end as time_ok,
         case    
             when is_leave_week = 1 then 1
-            when capex_ratio between 0.10 and 0.30 and opex_ratio between 0.70 and 0.90 then 1
+            when capex_ratio between 0.10 and 0.40 and opex_ratio between 0.60 and 0.90 then 1
             else 0
         end as mix_ok,
         case
-            when admin_hours <= 20 and has_non_submitted = 0 then 1 else 0 end as admin_ok
+            when admin_hours <= 30 and has_non_submitted = 0 then 1 else 0 end as admin_ok
     from conditions
 ),
 
