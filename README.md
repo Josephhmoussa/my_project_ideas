@@ -44,7 +44,7 @@ CSV Files (local)
 
 All assets are orchestrated by **Dagster**, wired together through the asset graph so dependencies are explicit and each materialisation records row counts and data previews as metadata.
 
-![alt text](<Screenshot 2026-06-25 at 12.14.48.png>)
+![Dagster asset graph](prod_pipeline/assets/timesheet_tracker/dagster_asset_graph.png)
 
 ---
 
