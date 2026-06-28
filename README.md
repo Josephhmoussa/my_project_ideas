@@ -111,8 +111,8 @@ Each employee-week is evaluated against three dimensions:
 | Flag | Rule |
 |------|------|
 | `time_ok` | Total hours between 35–41 and no non-submitted entries |
-| `mix_ok` | Capex ratio 10–30% and Opex ratio 70–90% — or a full leave week (37.5 / 40 hrs leave) |
-| `admin_ok` | Admin hours ≤ 20 and no non-submitted entries |
+| `mix_ok` | Capex ratio 10–40% and Opex ratio 60–90% — or a full leave week (37.5 / 40 hrs leave) |
+| `admin_ok` | Admin hours ≤ 30 and no non-submitted entries |
 
 **Final score:** `2` = fully compliant · `1` = submitted but at least one rule failed · `0` = has non-submitted entries
 
@@ -127,7 +127,6 @@ Each employee-week is evaluated against three dimensions:
 │   │       ├── assets_ingest_bronze_timesheet.py   # Reads CSVs, adds metadata cols, uploads to S3
 │   │       ├── assets_copy_into_snowflake.py       # TRUNCATE + COPY INTO bronze tables
 │   │       ├── assets_dbt_transformation.py        # Runs dbt build via DbtCliResource
-│   │       ├── generate.py                         # Synthetic data generator (see below)
 │   │       ├── csv_files/                          # Raw timesheet CSVs (input)
 │   │       └── lookup_files/                       # Project & task code lookup CSVs
 │   ├── resources/
@@ -152,14 +151,6 @@ Each employee-week is evaluated against three dimensions:
 
 ---
 
-## Synthetic Data Generator
-
-`generate.py` produces realistic demo CSVs so the pipeline can be run end-to-end without real data. It creates 20 employees across 3 teams (Sarah Mitchell / David Okafor / Rachel Burns), each assigned a fixed set of projects and tasks. Hours are randomised per week with intentional compliance violations seeded in — missing weeks, wrong Capex/Opex splits, draft-only saves — so the dashboard has something meaningful to show.
-
-The script outputs all three CSV types (`full_year`, `missing_timecards`, `saved_not_submitted`) matching exactly what the real system would export.
-
----
-
 ## Setup & Running Locally
 
 ### Prerequisites
@@ -175,20 +166,14 @@ The script outputs all three CSV types (`full_year`, `missing_timecards`, `saved
 pip install -r requirements.txt
 ```
 
-### 2. Generate demo data (optional)
-
-```bash
-python prod_pipeline/assets/timesheet_tracker/generate.py
-```
-
-### 3. Install dbt packages
+### 2. Install dbt packages
 
 ```bash
 cd dbt/timesheet_tracker
 dbt deps
 ```
 
-### 4. Launch Dagster
+### 3. Launch Dagster
 
 ```bash
 dagster dev
@@ -208,6 +193,6 @@ The Power BI dashboard connects directly to Snowflake and shows:
 - Admin hours distribution
 - Compliance score breakdown (0 / 1 / 2)
 
-> **Note:** Video walkthrough available [here — add your Loom link].
+> **Note:** Video walkthrough available - https://www.loom.com/share/4800b570f635496284f0f4693597dfff.
 
 ---

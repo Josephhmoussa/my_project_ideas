@@ -33,3 +33,6 @@ private_key_pkcs8.pem
 
 # Logs
 logs/
+
+# Generated files
+generate.py
