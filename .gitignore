@@ -13,9 +13,6 @@ venv/
 # Logs
 *.log
 
-# md files
-*.md
-
 # csv files
 *.csv
 
@@ -37,5 +34,5 @@ private_key_pkcs8.pem
 # Logs
 logs/
 
-# Generate CSVs
+# Generated files
 generate.py
