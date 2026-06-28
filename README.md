@@ -179,7 +179,7 @@ dbt deps
 dagster dev
 ```
 
-Open `http://localhost:3000`, go to the **Assets** tab, and materialise the `timesheet_pipeline` group.
+Open `http://localhost:3000`, go to the **Lineage** tab, and materialise the `timesheet_pipeline` group.
 
 ---
 
